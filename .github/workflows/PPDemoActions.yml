@@ -1,7 +1,11 @@
 jobs:
   build:
     runs-on: [self-hosted, Windows, X64]
+
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
     - name: Install Power Platform Tools
       uses: microsoft/powerplatform-actions/actions-install@v1
 
@@ -18,8 +22,8 @@ jobs:
     - name: Unpack Solution
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
-        solution-file: 'out/aSolution1.zip'
-        solution-folder: 'out/solutions/solution one'
+        solution-file: 'out/aSolution.zip'
+        solution-folder: 'out/solutions/solution1'
         solution-type: 'Unmanaged'
         overwrite-files: true
 
@@ -33,6 +37,7 @@ jobs:
     - name: Prepare solution changes for check-in into source control
       uses: microsoft/powerplatform-actions/branch-solution@v1
       with:
-        solution-folder: 'out/solutions/solution one'
+        solution-folder: 'out/solutions/solution1'
         solution-target-folder: 'src/solutions/solution1'
         token: ${{ secrets.GITHUB_TOKEN }}
+``
