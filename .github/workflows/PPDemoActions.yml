@@ -19,8 +19,9 @@ jobs:
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
         environment-url: 'https://orgb348fd10.crm.dynamics.com'
-        user-name: 'admin@ABSx95274260.onmicrosoft.com'
-        password-secret: ${{ secrets.PASSWORD }}
+        app-id: ${{ secrets.CLIENT_ID }}
+        client-secret: ${{ secrets.CLIENT_SECRET }}
+        tenant-id: ${{ secrets.TENANT_ID }}
         solution-name: Test_Demo
         solution-output-file: 'aSolution.zip'
         working-directory: 'out'
