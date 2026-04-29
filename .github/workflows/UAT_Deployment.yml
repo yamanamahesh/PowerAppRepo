@@ -1,0 +1,84 @@
+name: UAT Deployment
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - UAT
+
+jobs:
+  deploy-to-uat:
+    # Only run if PR was merged (not just closed)
+    if: github.event.pull_request.merged == true
+    runs-on: [self-hosted, Windows, X64]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+    - name: Install Power Platform Tools
+      uses: microsoft/powerplatform-actions/actions-install@v1
+      
+    - name: Create output directory
+      run: mkdir out
+    - name: Export Solution
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: 'https://orgb348fd10.crm.dynamics.com'
+        app-id: ${{ secrets.CLIENT_ID }}
+        client-secret: ${{ secrets.CLIENT_SECRET }}
+        tenant-id: ${{ secrets.TENANT_ID }}
+        solution-name: Test_Demo
+        solution-output-file: 'aSolution.zip'
+        working-directory: 'out'
+
+    - name: Unpack Solution
+      uses: microsoft/powerplatform-actions/unpack-solution@v1
+      with:
+        solution-file: 'out/aSolution.zip'
+        solution-folder: 'out/solutions/solution1'
+        solution-type: 'Unmanaged'
+        overwrite-files: true
+
+    - name: Pack Solution
+      uses: microsoft/powerplatform-actions/pack-solution@v1
+      with:
+        solution-folder: 'out/solutions/solution1'
+        solution-file: 'out/aSolution_packed.zip'
+        solution-type: 'Unmanaged'
+
+    - name: Import Solution
+      uses: microsoft/powerplatform-actions/import-solution@v1
+      with:
+        environment-url: 'https://orgb348fd10.crm.dynamics.com'
+        app-id: ${{ secrets.CLIENT_ID }}
+        client-secret: ${{ secrets.CLIENT_SECRET }}
+        tenant-id: ${{ secrets.TENANT_ID }}
+        solution-file: 'out/aSolution_packed.zip'
+        force-overwrite: true
+        publish-changes: true
+
+    - name: Publish Solution
+      uses: microsoft/powerplatform-actions/publish-solution@v1
+      with:
+        environment-url: 'https://orgb348fd10.crm.dynamics.com'
+        app-id: ${{ secrets.CLIENT_ID }}
+        client-secret: ${{ secrets.CLIENT_SECRET }}
+        tenant-id: ${{ secrets.TENANT_ID }}
+
+    - name: Deployment Success Notification
+      if: success()
+      run: |
+        Write-Host "✓ Deployment to UAT completed successfully!" -ForegroundColor Green
+        Write-Host "PR #${{ github.event.pull_request.number }}" -ForegroundColor Cyan
+        Write-Host "Branch: ${{ github.event.pull_request.base.ref }}" -ForegroundColor Cyan
+        Write-Host "Deployed by: ${{ github.event.pull_request.merged_by.login }}" -ForegroundColor Cyan
+
+    - name: Deployment Failed Notification
+      if: failure()
+      run: |
+        Write-Host "✗ Deployment to UAT failed!" -ForegroundColor Red
+        Write-Host "Please check the logs for details" -ForegroundColor Yellow
+        exit 1
