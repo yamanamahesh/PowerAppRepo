@@ -8,6 +8,7 @@ jobs:
 
     - name: Install Power Platform Tools
       uses: microsoft/powerplatform-actions/actions-install@v1
+      
     - name: Create output directory
       run: mkdir out
     - name: Export Solution
@@ -41,4 +42,3 @@ jobs:
         solution-folder: 'out/solutions/solution1'
         solution-target-folder: 'src/solutions/solution1'
         token: ${{ secrets.GITHUB_TOKEN }}
-``
