@@ -33,13 +33,14 @@ jobs:
         solution-name: Test_Demo
         solution-output-file: 'aSolution.zip'
         working-directory: 'out'
+        managed: true
 
     - name: Unpack Solution
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
         solution-file: 'out/aSolution.zip'
         solution-folder: 'out/solutions/solution1'
-        solution-type: 'Unmanaged'
+        solution-type: 'Managed'
         overwrite-files: true
 
     - name: Pack Solution
@@ -47,12 +48,20 @@ jobs:
       with:
         solution-folder: 'out/solutions/solution1'
         solution-file: 'out/aSolution_packed.zip'
-        solution-type: 'Unmanaged'
+        solution-type: 'Managed'
+
+    - name: Generate Version ID
+      id: generate_version
+      run: |
+        $versionId = "v${{ github.run_id }}"
+        Write-Host "Solution Version: $versionId"
+        echo "version_id=$versionId" >> $env:GITHUB_OUTPUT
+        Copy-Item 'out/aSolution_packed.zip' "out/aSolution_packed_$versionId.zip"
 
     - name: Import Solution
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: 'https://orgb348fd10.crm.dynamics.com'
+        environment-url: 'https://orgf0e38a8b.crm.dynamics.com'
         app-id: ${{ secrets.CLIENT_ID }}
         client-secret: ${{ secrets.CLIENT_SECRET }}
         tenant-id: ${{ secrets.TENANT_ID }}
@@ -63,10 +72,17 @@ jobs:
     - name: Publish Solution
       uses: microsoft/powerplatform-actions/publish-solution@v1
       with:
-        environment-url: 'https://orgb348fd10.crm.dynamics.com'
+        environment-url: 'https://orgf0e38a8b.crm.dynamics.com'
         app-id: ${{ secrets.CLIENT_ID }}
         client-secret: ${{ secrets.CLIENT_SECRET }}
         tenant-id: ${{ secrets.TENANT_ID }}
+
+    - name: Upload Solution Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: solution-package-${{ steps.generate_version.outputs.version_id }}
+        path: out/aSolution_packed_${{ steps.generate_version.outputs.version_id }}.zip
+        retention-days: 5
 
     - name: Deployment Success Notification
       if: success()
@@ -75,6 +91,8 @@ jobs:
         Write-Host "PR #${{ github.event.pull_request.number }}" -ForegroundColor Cyan
         Write-Host "Branch: ${{ github.event.pull_request.base.ref }}" -ForegroundColor Cyan
         Write-Host "Deployed by: ${{ github.event.pull_request.merged_by.login }}" -ForegroundColor Cyan
+        Write-Host "Solution Version: ${{ steps.generate_version.outputs.version_id }}" -ForegroundColor Yellow
+        Write-Host "Artifact: solution-package-${{ steps.generate_version.outputs.version_id }}" -ForegroundColor Yellow
 
     - name: Deployment Failed Notification
       if: failure()
