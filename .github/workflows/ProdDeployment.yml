@@ -1,13 +1,11 @@
 name: Prod Deployment
-
 on:
   push:
     branches:
       - main
 jobs:
   deploy-to-prod:
-    if: github.event.pull_request.merged == true
-    runs-on: [self-hosted, Windows, X64]
+       runs-on: [self-hosted, Windows, X64]
 
     steps:
     - name: Checkout repository
