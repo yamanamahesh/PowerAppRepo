@@ -1,8 +1,6 @@
 name: Prod Deployment
 
 on:
-  pull_request:
-    types: [closed]
     branches:
       - main
 
