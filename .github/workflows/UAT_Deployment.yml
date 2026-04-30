@@ -51,10 +51,11 @@ jobs:
         solution-type: 'Managed'
 
     - name: Generate Version ID
+      id: generate_version
       run: |
         $versionId = "v${{ github.run_id }}"
         Write-Host "Solution Version: $versionId"
-        Write-Host "version_id=$versionId" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        echo "version_id=$versionId" >> $env:GITHUB_OUTPUT
         Copy-Item 'out/aSolution_packed.zip' "out/aSolution_packed_$versionId.zip"
 
     - name: Import Solution
@@ -77,10 +78,10 @@ jobs:
         tenant-id: ${{ secrets.TENANT_ID }}
 
     - name: Upload Solution Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: solution-package-${{ env.version_id }}
-        path: out/aSolution_packed_${{ env.version_id }}.zip
+        name: solution-package-${{ steps.generate_version.outputs.version_id }}
+        path: out/aSolution_packed_${{ steps.generate_version.outputs.version_id }}.zip
         retention-days: 5
 
     - name: Deployment Success Notification
@@ -90,8 +91,8 @@ jobs:
         Write-Host "PR #${{ github.event.pull_request.number }}" -ForegroundColor Cyan
         Write-Host "Branch: ${{ github.event.pull_request.base.ref }}" -ForegroundColor Cyan
         Write-Host "Deployed by: ${{ github.event.pull_request.merged_by.login }}" -ForegroundColor Cyan
-        Write-Host "Solution Version: ${{ env.version_id }}" -ForegroundColor Yellow
-        Write-Host "Artifact: solution-package-${{ env.version_id }}" -ForegroundColor Yellow
+        Write-Host "Solution Version: ${{ steps.generate_version.outputs.version_id }}" -ForegroundColor Yellow
+        Write-Host "Artifact: solution-package-${{ steps.generate_version.outputs.version_id }}" -ForegroundColor Yellow
 
     - name: Deployment Failed Notification
       if: failure()
