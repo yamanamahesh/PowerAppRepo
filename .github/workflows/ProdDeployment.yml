@@ -109,7 +109,7 @@ jobs:
         app-id: ${{ secrets.CLIENT_ID }}
         client-secret: ${{ secrets.CLIENT_SECRET }}
         tenant-id: ${{ secrets.TENANT_ID }}
-        solution-file: 'out/aSolution_packed.zip'
+        solution-file: out/aSolution_packed_v${{ steps.find_uat_run.outputs.run_id }}.zip
         force-overwrite: true
         publish-changes: true
 
