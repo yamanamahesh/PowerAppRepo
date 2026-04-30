@@ -39,7 +39,7 @@ jobs:
       with:
         solution-file: 'out/aSolution.zip'
         solution-folder: 'out/solutions/solution1'
-        solution-type: 'Unmanaged'
+        solution-type: 'Managed'
         overwrite-files: true
 
     - name: Pack Solution
@@ -47,12 +47,12 @@ jobs:
       with:
         solution-folder: 'out/solutions/solution1'
         solution-file: 'out/aSolution_packed.zip'
-        solution-type: 'Unmanaged'
+        solution-type: 'Managed'
 
     - name: Import Solution
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: 'https://orgb348fd10.crm.dynamics.com'
+        environment-url: 'https://orgf0e38a8b.crm.dynamics.com'
         app-id: ${{ secrets.CLIENT_ID }}
         client-secret: ${{ secrets.CLIENT_SECRET }}
         tenant-id: ${{ secrets.TENANT_ID }}
@@ -63,7 +63,7 @@ jobs:
     - name: Publish Solution
       uses: microsoft/powerplatform-actions/publish-solution@v1
       with:
-        environment-url: 'https://orgb348fd10.crm.dynamics.com'
+        environment-url: 'https://orgf0e38a8b.crm.dynamics.com'
         app-id: ${{ secrets.CLIENT_ID }}
         client-secret: ${{ secrets.CLIENT_SECRET }}
         tenant-id: ${{ secrets.TENANT_ID }}
