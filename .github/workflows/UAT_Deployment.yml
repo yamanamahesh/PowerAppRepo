@@ -50,6 +50,13 @@ jobs:
         solution-file: 'out/aSolution_packed.zip'
         solution-type: 'Managed'
 
+    - name: Generate Version ID
+      run: |
+        $versionId = "v${{ github.run_id }}"
+        Write-Host "Solution Version: $versionId"
+        Write-Host "version_id=$versionId" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        Copy-Item 'out/aSolution_packed.zip' "out/aSolution_packed_$versionId.zip"
+
     - name: Import Solution
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
@@ -69,6 +76,13 @@ jobs:
         client-secret: ${{ secrets.CLIENT_SECRET }}
         tenant-id: ${{ secrets.TENANT_ID }}
 
+    - name: Upload Solution Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: solution-package-${{ env.version_id }}
+        path: out/aSolution_packed_${{ env.version_id }}.zip
+        retention-days: 5
+
     - name: Deployment Success Notification
       if: success()
       run: |
@@ -76,6 +90,8 @@ jobs:
         Write-Host "PR #${{ github.event.pull_request.number }}" -ForegroundColor Cyan
         Write-Host "Branch: ${{ github.event.pull_request.base.ref }}" -ForegroundColor Cyan
         Write-Host "Deployed by: ${{ github.event.pull_request.merged_by.login }}" -ForegroundColor Cyan
+        Write-Host "Solution Version: ${{ env.version_id }}" -ForegroundColor Yellow
+        Write-Host "Artifact: solution-package-${{ env.version_id }}" -ForegroundColor Yellow
 
     - name: Deployment Failed Notification
       if: failure()
