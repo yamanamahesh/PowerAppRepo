@@ -1,9 +1,8 @@
 name: Prod Deployment
-
 on:
+  push:
     branches:
       - main
-
 jobs:
   deploy-to-prod:
     if: github.event.pull_request.merged == true
