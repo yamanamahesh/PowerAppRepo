@@ -33,6 +33,7 @@ jobs:
         solution-name: Test_Demo
         solution-output-file: 'aSolution.zip'
         working-directory: 'out'
+        managed: true
 
     - name: Unpack Solution
       uses: microsoft/powerplatform-actions/unpack-solution@v1
