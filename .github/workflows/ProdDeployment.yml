@@ -32,27 +32,37 @@ jobs:
         $repo = "${{ github.repository }}"
         $baseUri = "https://api.github.com/repos/$repo/actions/workflows/UAT_Deployment.yml/runs"
         
-        # Build query string
+        # First, try with all filters
         $queryParams = @(
           "status=completed"
           "conclusion=success"
-          "branch=UAT"
-          "per_page=1"
+          "per_page=5"
         )
         $fullUri = "$baseUri`?$($queryParams -join '&')"
         
-        Write-Host "Fetching from: $fullUri"
+        Write-Host "Fetching successful UAT runs from: $fullUri"
         
         try {
           $response = Invoke-RestMethod -Uri $fullUri -Headers $headers -Method Get
           
-          if ($response.workflow_runs -and $response.workflow_runs.Count -gt 0) {
-            $latestRun = $response.workflow_runs[0]
+          Write-Host "Total runs found: $($response.workflow_runs.Count)"
+          if ($response.workflow_runs) {
+            foreach ($run in $response.workflow_runs) {
+              Write-Host "  - Run ID: $($run.id), Branch: $($run.head_branch), Status: $($run.status), Conclusion: $($run.conclusion)"
+            }
+          }
+          
+          # Filter for successful runs on UAT branch
+          $uatRuns = @($response.workflow_runs | Where-Object { $_.head_branch -eq "UAT" -and $_.conclusion -eq "success" })
+          
+          if ($uatRuns.Count -gt 0) {
+            $latestRun = $uatRuns[0]
             $runId = $latestRun.id
-            Write-Host "Latest UAT Run ID: $runId"
+            Write-Host "Latest successful UAT Run ID: $runId"
             echo "run_id=$runId" >> $env:GITHUB_OUTPUT
           } else {
-            Write-Host "Error: No successful UAT runs found"
+            Write-Host "No successful UAT runs found"
+            Write-Host "Available successful runs: $($response.workflow_runs | Where-Object { $_.conclusion -eq 'success' } | Select-Object -ExpandProperty head_branch | Get-Unique)"
             exit 1
           }
         } catch {
