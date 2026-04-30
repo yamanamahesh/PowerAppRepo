@@ -1,12 +1,14 @@
 name: Prod Deployment
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
 
 jobs:
   deploy-to-prod:
+    if: github.event.pull_request.merged == true
     runs-on: [self-hosted, Windows, X64]
 
     steps:
@@ -19,32 +21,38 @@ jobs:
     - name: Create output directory
       run: mkdir out
 
-    - name: Export Solution
-      uses: microsoft/powerplatform-actions/export-solution@v1
-      with:
-        environment-url: 'https://orgb348fd10.crm.dynamics.com'
-        app-id: ${{ secrets.CLIENT_ID }}
-        client-secret: ${{ secrets.CLIENT_SECRET }}
-        tenant-id: ${{ secrets.TENANT_ID }}
-        solution-name: Test_Demo
-        solution-output-file: 'aSolution.zip'
-        working-directory: 'out'
-        managed: true
+    - name: Find Latest UAT Deployment Run
+      id: find_uat_run
+      run: |
+        $headers = @{
+          'Authorization' = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+          'Accept' = 'application/vnd.github.v3+json'
+        }
+        
+        $response = Invoke-RestMethod `
+          -Uri "https://api.github.com/repos/${{ github.repository }}/actions/workflows/UAT_Deployment.yml/runs?branch=UAT&status=completed&conclusion=success" `
+          -Headers $headers `
+          -Method Get
+        
+        $latestRun = $response.workflow_runs | Select-Object -First 1
+        $runId = $latestRun.id
+        
+        Write-Host "Latest UAT Run ID: $runId"
+        echo "run_id=$runId" >> $env:GITHUB_OUTPUT
 
-    - name: Unpack Solution
-      uses: microsoft/powerplatform-actions/unpack-solution@v1
-      with:
-        solution-file: 'out/aSolution.zip'
-        solution-folder: 'out/solutions/solution1'
-        solution-type: 'Managed'
-        overwrite-files: true
-
-    - name: Pack Solution
-      uses: microsoft/powerplatform-actions/pack-solution@v1
-      with:
-        solution-folder: 'out/solutions/solution1'
-        solution-file: 'out/aSolution_packed.zip'
-        solution-type: 'Managed'
+    - name: Download Solution Artifact from UAT
+      run: |
+        $runId = "${{ steps.find_uat_run.outputs.run_id }}"
+        $artifactName = "solution-package-v$runId"
+        
+        Write-Host "Downloading artifact: $artifactName from run: $runId"
+        
+        gh run download $runId `
+          --name $artifactName `
+          --dir out `
+          --repo ${{ github.repository }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Import Solution
       uses: microsoft/powerplatform-actions/import-solution@v1
@@ -69,8 +77,9 @@ jobs:
       if: success()
       run: |
         Write-Host "✓ Deployment to PROD completed successfully!" -ForegroundColor Green
-        Write-Host "Branch: main" -ForegroundColor Cyan
-        Write-Host "Commit: ${{ github.sha }}" -ForegroundColor Cyan
+        Write-Host "PR #${{ github.event.pull_request.number }}" -ForegroundColor Cyan
+        Write-Host "Merged by: ${{ github.event.pull_request.merged_by.login }}" -ForegroundColor Cyan
+        Write-Host "Solution Version: v${{ steps.find_uat_run.outputs.run_id }}" -ForegroundColor Yellow
 
     - name: Deployment Failed Notification
       if: failure()
