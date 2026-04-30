@@ -97,6 +97,6 @@ jobs:
     - name: Deployment Failed Notification
       if: failure()
       run: |
-        Write-Host "✗ Deployment to UAT failed!" -ForegroundColor Red
+        Write-Host "✗ Deployment to UAT is failed!" -ForegroundColor Red
         Write-Host "Please check the logs for details" -ForegroundColor Yellow
         exit 1
