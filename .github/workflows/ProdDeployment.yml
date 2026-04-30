@@ -1,9 +1,12 @@
+name: Prod Deployment
+
 on:
   push:
     branches:
       - main
+
 jobs:
-  build:
+  deploy-to-prod:
     runs-on: [self-hosted, Windows, X64]
 
     steps:
@@ -15,6 +18,7 @@ jobs:
       
     - name: Create output directory
       run: mkdir out
+
     - name: Export Solution
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
@@ -25,19 +29,52 @@ jobs:
         solution-name: Test_Demo
         solution-output-file: 'aSolution.zip'
         working-directory: 'out'
+        managed: true
 
     - name: Unpack Solution
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
         solution-file: 'out/aSolution.zip'
         solution-folder: 'out/solutions/solution1'
-        solution-type: 'Unmanaged'
+        solution-type: 'Managed'
         overwrite-files: true
+
+    - name: Pack Solution
+      uses: microsoft/powerplatform-actions/pack-solution@v1
+      with:
+        solution-folder: 'out/solutions/solution1'
+        solution-file: 'out/aSolution_packed.zip'
+        solution-type: 'Managed'
+
+    - name: Import Solution
+      uses: microsoft/powerplatform-actions/import-solution@v1
+      with:
+        environment-url: 'https://org21989145.crm.dynamics.com'
+        app-id: ${{ secrets.CLIENT_ID }}
+        client-secret: ${{ secrets.CLIENT_SECRET }}
+        tenant-id: ${{ secrets.TENANT_ID }}
+        solution-file: 'out/aSolution_packed.zip'
+        force-overwrite: true
+        publish-changes: true
 
     - name: Publish Solution
       uses: microsoft/powerplatform-actions/publish-solution@v1
       with:
-        environment-url: 'https://orgb348fd10.crm.dynamics.com'
+        environment-url: 'https://org21989145.crm.dynamics.com'
         app-id: ${{ secrets.CLIENT_ID }}
         client-secret: ${{ secrets.CLIENT_SECRET }}
         tenant-id: ${{ secrets.TENANT_ID }}
+
+    - name: Deployment Success Notification
+      if: success()
+      run: |
+        Write-Host "✓ Deployment to PROD completed successfully!" -ForegroundColor Green
+        Write-Host "Branch: main" -ForegroundColor Cyan
+        Write-Host "Commit: ${{ github.sha }}" -ForegroundColor Cyan
+
+    - name: Deployment Failed Notification
+      if: failure()
+      run: |
+        Write-Host "✗ Deployment to PROD failed!" -ForegroundColor Red
+        Write-Host "Please check the logs for details" -ForegroundColor Yellow
+        exit 1
